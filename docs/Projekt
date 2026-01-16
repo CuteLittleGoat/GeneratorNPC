@@ -1,1 +1,135 @@
+# Generator NPC — baseline dokumentacji
+
+## 1) Kontekst i cel
+Celem tej dokumentacji jest przygotowanie **osobnego repozytorium** dla modułu „Generator NPC”, które:
+- korzysta z danych utrzymywanych w repozytorium źródłowym (Repozytorium),
+- ma skopiowany wygląd/estetykę (fonty, kolory, układ, komponenty),
+- zachowuje mechanizm „podpowiedzi cech” (popover po kliknięciu tagu cechy).
+
+## 2) Transkrypcja konwersacji (ustalenia funkcjonalne)
+> **Użytkownik:**
+> Przeprowadź dokładną analizę aplikacji. Planuję zrobić nowy moduł. „Generator NPC”.
+> Łączyłby on dane z kilku zakładek. W pierwszym kroku wybierałbym Nazwę z zakładki „Bestiariusz”…
+> [pełny opis logiki pancerzy/broni/checkboxów i wymagań dot. cech, WP, deduplikacji itd.]
+>
+> **Asystent:**
+> Przedstawił analizę architektury oraz zaproponował sposób wdrożenia Generatora NPC,
+> w tym rozwiązanie optymalizujące obliczenia odporności przez wyliczenie bazowej odporności
+> (bez pancerza) i nadpisanie WP najwyższą wartością z wybranych pancerzy.
+>
+> **Użytkownik:**
+> A gdybym chciał ten moduł mieć „osobno” a nie wbudowany w stronę Repozytorium? Da się jakoś w jednym repo zaciągać dane z innego?
+>
+> **Asystent:**
+> Tak — możliwe są warianty z osobnym repo i pobieraniem `data.json` z innego hosta,
+> ale trzeba uwzględnić CORS. Najprostszy wariant to osobna strona w tym samym repo;
+> dla osobnego repo zalecany jest hosting danych z nagłówkiem CORS lub synchronizacja pliku `data.json`.
+>
+> **Użytkownik:**
+> Interesuje mnie wariant w osobnym repo. Przygotuj mi plik z całą tą konwersacją. Zapisz dodatkowo wytyczne dot. stylu (font, tło, ramki i wszystko co potrzebne, żeby skopiować wygląd strony). Przygotuj też dokładne info skąd i jak brać dane. Przygotuj również informacje dot. tego mechanizmu wyświetlania podpowiedzi cech.
+> Ten plik ma być baseline do dokumentacji dla nowego projektu.
+
+> **Uwaga:** Jeżeli potrzebujesz pełnej, słowo-w-słowo transkrypcji, dołącz ją do tego pliku ręcznie
+> (np. z eksportu rozmowy). Powyższy blok to streszczenie najważniejszych ustaleń.
+
+---
+
+## 3) Wytyczne dot. stylu (kopiowanie wyglądu)
+Poniższe elementy należy przenieść do nowego repo, aby zachować identyczny wygląd.
+
+### 3.1. Fonty i podstawowe ustawienia
+- Fonty Google: `Orbitron` (nagłówki/przyciski) i `Share Tech Mono` (tekst główny).【F:index.html†L7-L10】
+- Ustawienia bazowe (body): tło, kolor tekstu, rodzina fontów i spacing.【F:style.css†L1-L47】
+
+### 3.2. Paleta i zmienne CSS
+Wszystkie kluczowe kolory, cienie i przezroczystości są zdefiniowane jako zmienne CSS w `:root` (np. `--bg`, `--panel`, `--text`, `--b`, `--div`, `--glow`).【F:style.css†L1-L31】
+
+### 3.3. Layout (szkielet strony)
+- Topbar: pasek z brandingiem i akcjami (przyciski).【F:style.css†L48-L83】
+- Panel boczny + workspace: `main` z siatką `grid-template-columns: 360px 1fr`.【F:style.css†L84-L104】
+- Tabs i przestrzeń tabeli (workspace).【F:style.css†L105-L167】
+
+### 3.4. Komponenty UI
+- **Przyciski (btn)** — uppercase, Orbitron, obramowanie i tła oparte o `--b`.【F:style.css†L59-L80】
+- **Inputy (input)** — ciemne tło, zielone obramowanie, focus glow.【F:style.css†L95-L103】
+- **Tagi cech (.tag)** — klikalne, obramowane, uppercase, lekkie tło, hover. 【F:style.css†L159-L172】
+- **Popover** — panel z prawej/dolnej strony, używany do opisów cech. 【F:style.css†L173-L215】
+- **Modal** — overlay do porównań (może się przydać w generatorze).【F:style.css†L217-L238】
+
+### 3.5. Tabela i formatowanie komórek
+- Tabela (`.dataTable`) z sticky headerami, zebra stripingiem, hoverem i obramowaniami.【F:style.css†L128-L157】
+- Długi tekst renderowany jako `pre-wrap` w `.celltext`.【F:style.css†L296-L302】
+
+> **Rekomendacja:** Skopiuj **cały `style.css`** oraz fragment `<head>` z fontami Google z `index.html`, aby zachować 1:1 wygląd.【F:index.html†L7-L10】【F:style.css†L1-L306】
+
+---
+
+## 4) Dane — skąd i jak je pobierać w osobnym repo
+
+### 4.1. Źródło danych (Repozytorium)
+- Dane są dostarczane jako `data.json`, generowane z `Repozytorium.xlsx` przez skrypt `build_json.py`.【F:build_json.py†L1-L16】【F:docs/README.md†L1-L28】
+- Skrypt buduje również sekcję `_meta` zawierającą opisy cech i stanów.【F:build_json.py†L1-L10】【F:build_json.py†L300-L318】
+
+### 4.2. Jak zaciągać dane w osobnym repo
+W nowym repo Generatora NPC:
+1. Hostuj `data.json` w repozytorium źródłowym (np. GitHub Pages).
+2. W aplikacji generatora wykonuj `fetch()` do **pełnego URL**:
+   ```js
+   fetch("https://twoj-host/data.json", { cache: "no-store" })
+   ```
+3. Upewnij się, że hosting zwraca nagłówek CORS (`Access-Control-Allow-Origin`).
+
+Mechanizm pobierania danych w obecnej aplikacji korzysta z `fetch("data.json")` i zakłada dane statyczne w tej samej lokalizacji. W osobnym repo trzeba to zmienić na URL absolutny. 【F:app.js†L274-L310】
+
+### 4.3. Alternatywa (synchronizacja pliku)
+Jeśli CORS jest problemem, można automatycznie kopiować `data.json` do repo Generatora (np. GitHub Actions). Wtedy `fetch("data.json")` działa lokalnie i jest zgodne z aktualnym modelem aplikacji. 【F:app.js†L274-L310】
+
+---
+
+## 5) Mechanizm podpowiedzi cech (popover)
+Mechanizm opisu cech opiera się o:
+- renderowanie cech jako tagi (`span.tag`),
+- kliknięcie tagu wywołuje `openTraitPopover(traitName)`,
+- opis pobierany jest z `DB._meta.traits` i wyświetlany w panelu popover. 【F:app.js†L899-L975】
+
+### 5.1. Renderowanie tagów
+Funkcja `renderTraitsCell()`:
+- rozdziela `Cechy` po średniku,
+- dla każdej cechy tworzy `span.tag` z listenerem kliknięcia.
+【F:app.js†L899-L914】
+
+### 5.2. Rozwiązywanie opisu cechy
+Funkcja `resolveTrait()`:
+- obsługuje cechy parametryzowane (`Nieporęczny (2)` → `Nieporęczny (X)`),
+- obsługuje specjalne „Wywołanie (Stan)”,
+- wykonuje match po kanonicznej nazwie cechy w `_meta.traits`.
+【F:app.js†L917-L963】
+
+### 5.3. Prezentacja w popoverze
+Funkcja `openTraitPopover()`:
+- ustawia tytuł,
+- renderuje opis w formacie rich text,
+- otwiera panel popover (CSS `.popover`).【F:app.js†L965-L975】【F:style.css†L173-L215】
+
+### 5.4. Skąd bierze się `_meta.traits`
+- Skrypt `build_json.py` buduje `_meta.traits` z arkusza „Cechy” (kolumny `Nazwa` i `Opis`).【F:build_json.py†L1-L10】【F:build_json.py†L300-L318】
+
+---
+
+## 6) Checklist dla nowego repo (Generator NPC)
+1. Skopiuj styl:
+   - `style.css` w całości.
+   - `<link>` do fontów Google z `index.html`.
+2. Ustaw `fetch()` na URL hostowanego `data.json`.
+3. Skopiuj/zaadaptuj logikę popoverów i renderowania tagów cech.
+4. Zaplanuj moduł generatora jako osobną stronę (np. `index.html`) i osobny `app.js`.
+
+---
+
+## 7) Linki do plików źródłowych (referencje)
+- Styl i wygląd: `style.css`【F:style.css†L1-L306】
+- Fonty i bazowy HTML: `index.html`【F:index.html†L1-L91】
+- Pobieranie danych: `app.js` (`loadJsonFromRepo`, `fetch`).【F:app.js†L274-L310】
+- Mechanizm cech i popoverów: `app.js` (`renderTraitsCell`, `resolveTrait`, `openTraitPopover`).【F:app.js†L899-L975】
+- Generowanie `data.json`: `build_json.py`.【F:build_json.py†L1-L10】【F:build_json.py†L300-L318】
 
