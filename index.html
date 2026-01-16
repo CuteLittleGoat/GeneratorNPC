@@ -3,252 +3,721 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GeneratorNPC — Specyfikacja modułu</title>
-    <style>
-      :root {
-        color-scheme: dark;
-      }
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: #0b0f14;
-        color: #e6edf3;
-        line-height: 1.6;
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 32px 24px 80px;
-      }
-      h1,
-      h2,
-      h3 {
-        font-weight: 600;
-        margin-top: 32px;
-      }
-      h1 {
-        margin-top: 0;
-        font-size: 2.2rem;
-      }
-      p {
-        margin: 12px 0;
-      }
-      ul,
-      ol {
-        margin: 12px 0 12px 24px;
-      }
-      section {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        padding: 20px 24px;
-        margin-bottom: 24px;
-      }
-      .badge {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 999px;
-        font-size: 0.85rem;
-        background: rgba(88, 166, 255, 0.15);
-        border: 1px solid rgba(88, 166, 255, 0.5);
-        color: #c9e3ff;
-        margin-left: 8px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-      }
-      .card {
-        background: rgba(17, 24, 39, 0.6);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 10px;
-        padding: 16px;
-      }
-      code {
-        background: rgba(15, 23, 42, 0.7);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-size: 0.95em;
-      }
-      .note {
-        border-left: 4px solid #22c55e;
-        padding-left: 12px;
-        color: #d1fae5;
-      }
-      .warn {
-        border-left: 4px solid #f59e0b;
-        padding-left: 12px;
-        color: #fde68a;
-      }
-      .footer {
-        margin-top: 48px;
-        font-size: 0.9rem;
-        color: #9ca3af;
-      }
-    </style>
+    <title>Generator NPC — Panel roboczy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main>
-      <h1>GeneratorNPC — Specyfikacja modułu <span class="badge">Etap 1: Pancerze + Bronie</span></h1>
-      <p class="note">
-        Ten dokument opisuje zakres pierwszego etapu rozbudowy GeneratorNPC: łączenie danych z
-        Bestiariusza, Pancerzy i Broni oraz przygotowanie UI pod kolejne moduły (Talenty, Modlitwy,
-        Psionika, Ekwipunek).
-      </p>
+    <header class="topbar">
+      <div class="brand">
+        <h1>Generator NPC</h1>
+        <span>Etap 1 — Bestiariusz · Pancerze · Bronie</span>
+      </div>
+      <div class="actions">
+        <button class="btn">Eksport</button>
+        <button class="btn primary">Generuj kartę</button>
+      </div>
+    </header>
 
-      <section>
-        <h2>1. Cel modułu</h2>
-        <p>
-          Użytkownik wybiera bazowy rekord z zakładki <strong>Bestiariusz</strong>, a następnie może
-          opcjonalnie zmienić <strong>Pancerz</strong> i/lub <strong>Broń</strong>. Zmiany obowiązują
-          wyłącznie w nowej zakładce „Generator NPC” i nie modyfikują danych źródłowych.
-        </p>
-        <p>
-          Dane są pobierane z <code>https://cutelittlegoat.github.io/Repozytorium/data.json</code>.
-        </p>
-      </section>
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>Źródło danych</h2>
+          <p class="text-muted">
+            Dane są pobierane z pliku
+            <a class="link" href="https://cutelittlegoat.github.io/Repozytorium/data.json">
+              cutelittlegoat.github.io/Repozytorium/data.json
+            </a>
+            , bez modyfikacji źródła.
+          </p>
+          <p class="status" id="data-status">Ładowanie danych...</p>
+        </section>
 
-      <section>
-        <h2>2. Zakres UI (Etap 1)</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>2.1. Wybór Bestiariusza</h3>
-            <ul>
-              <li>Jednopolowy select „Nazwa” z zakładki Bestiariusz.</li>
-              <li>Po wyborze wypełnia sekcję danych bazowych.</li>
-            </ul>
+        <section class="panel">
+          <h2>Wybór bazowy</h2>
+          <div class="field">
+            <label for="bestiary">Bestiariusz · Nazwa</label>
+            <select id="bestiary"></select>
           </div>
-          <div class="card">
-            <h3>2.2. Checkboxy sterujące</h3>
-            <ul>
-              <li>„Czy zmienić Pancerz?”</li>
-              <li>„Czy zmienić Broń?”</li>
-            </ul>
+          <div class="field">
+            <label for="bestiary-search">Filtruj listę</label>
+            <input id="bestiary-search" type="text" placeholder="Wpisz fragment nazwy" />
           </div>
-          <div class="card">
-            <h3>2.3. Sekcja Pancerza</h3>
-            <ul>
-              <li>Aktywna tylko po zaznaczeniu checkboxa.</li>
-              <li>Wielokrotny wybór pancerzy z zakładki Pancerze.</li>
-              <li>Wynikowy blok: Odporność (w tym WP), Wartość Pancerza, Cechy Pancerza.</li>
-            </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Moduły aktywne</h2>
+          <div class="checkbox-list">
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-armor" checked />
+              <span>Pancerz — nadpisz WP i cechy.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-weapons" checked />
+              <span>Broń — ustaw ataki i cechy.</span>
+            </label>
           </div>
-          <div class="card">
-            <h3>2.4. Sekcja Broni</h3>
-            <ul>
-              <li>Aktywna tylko po zaznaczeniu checkboxa.</li>
-              <li>Wielokrotny wybór broni z zakładki Bronie.</li>
-              <li>Wynikowy blok: Atak + Cechy Broni.</li>
-            </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Moduły dodatkowe</h2>
+          <div class="checkbox-list">
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-psionics" />
+              <span>Psionika</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-prayers" />
+              <span>Modlitwy</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-talents" />
+              <span>Talenty</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-equipment" />
+              <span>Ekwipunek</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="toggle-augmentations" />
+              <span>Augmentacje</span>
+            </label>
           </div>
-          <div class="card">
-            <h3>2.5. Sekcje przyszłe</h3>
-            <ul>
-              <li>Checkboxy: Talent, Modlitwa, Psionika, Ekwipunek.</li>
-              <li>W tej fazie obecne jako nieaktywne placeholdery.</li>
-            </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Reguły formatowania</h2>
+          <p class="text-muted">
+            Odnośniki i czerwone oznaczenia są renderowane zgodnie z danymi źródłowymi, z
+            zachowaniem przecinków, średników i układu znaków.
+          </p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="card">
+          <h3>Podgląd bazowy <span class="badge">Bestiariusz</span></h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Klucz</th>
+                <th>Wartość</th>
+                <th>Akcje</th>
+              </tr>
+            </thead>
+            <tbody id="base-table"></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="armor-section">
+          <h3>Wybór Pancerzy</h3>
+          <div class="field">
+            <label for="armor">Pancerze (wielokrotny wybór)</label>
+            <select id="armor" multiple></select>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-block">
+              <h4>Najwyższe WP</h4>
+              <p id="armor-wp">—</p>
+            </div>
+            <div class="summary-block">
+              <h4>Odporność (w tym WP)</h4>
+              <p id="armor-resistance">—</p>
+            </div>
+            <div class="summary-block">
+              <h4>Cechy pancerza</h4>
+              <div id="armor-traits" class="tag-list"></div>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section>
-        <h2>3. Logika Pancerza</h2>
-        <ol>
-          <li>Pobierz z Bestiariusza: <strong>Odporność (w tym WP)</strong> i <strong>Wartość Pancerza</strong>.</li>
-          <li>Wylicz <strong>Bazową Odporność</strong> = Odporność (w tym WP) − Wartość Pancerza.</li>
-          <li>Po wyborze pancerzy:</li>
-        </ol>
-        <ul>
-          <li>Wybierz najwyższe <strong>WP</strong> (z gwiazdką, jeśli występuje).</li>
-          <li>Zbierz wszystkie cechy z kolumny <strong>Cechy</strong> (bez duplikatów).</li>
-        </ul>
-        <ol start="4">
-          <li>Ustaw <strong>Wartość Pancerza</strong> = najwyższe WP.</li>
-          <li>Ustaw <strong>Odporność (w tym WP)</strong> = Bazowa Odporność + najwyższe WP.</li>
-          <li>Dodaj kolumnę <strong>Cechy Pancerza</strong> z listą cech (separator: średnik + spacja).</li>
-        </ol>
-        <p class="warn">
-          Uwaga: Bestiariusz przechowuje Odporność wraz z WP, więc wyliczenie bazowej odporności
-          jest kluczowe, aby poprawnie nadpisać pancerz.
-        </p>
-      </section>
-
-      <section>
-        <h2>4. Logika Broni</h2>
-        <ul>
-          <li>Wielokrotny wybór broni z zakładki Bronie.</li>
-          <li>W polu <strong>Atak</strong> wpisz (separator: średnik + spacja):</li>
-        </ul>
-        <ul>
-          <li>Nazwa</li>
-          <li>Obrażenia</li>
-          <li>DK</li>
-          <li>PP</li>
-          <li>Zasięg</li>
-          <li>Szybkostrzelność</li>
-        </ul>
-        <ul>
-          <li>Po wyborze minimum jednej broni dodaj kolumnę <strong>Cechy Broni</strong>.</li>
-          <li>Cechy przenieś z kolumny <strong>Cechy</strong> (bez duplikatów).</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>5. Opisy cech (Pancerz i Broń)</h2>
-        <ul>
-          <li>Zachować mechanizm kliknięcia tagu cechy i wyświetlenia opisu.</li>
-          <li>Źródłem opisów pozostaje sekcja <code>_meta.traits</code> z <code>data.json</code>.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>6. Dane wejściowe i mapowanie</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>Bestiariusz</h3>
-            <ul>
-              <li>Nazwa (select)</li>
-              <li>Odporność (w tym WP)</li>
-              <li>Wartość Pancerza</li>
-              <li>Inne kolumny do podglądu bazowego rekordu</li>
-            </ul>
+        <div class="card" id="weapon-section">
+          <h3>Wybór Broni</h3>
+          <div class="field">
+            <label for="weapon">Bronie (wielokrotny wybór)</label>
+            <select id="weapon" multiple></select>
           </div>
-          <div class="card">
-            <h3>Pancerze</h3>
-            <ul>
-              <li>Nazwa (multiselect)</li>
-              <li>WP</li>
-              <li>Cechy</li>
-            </ul>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Atak</th>
+                <th>Parametry</th>
+                <th>Cechy</th>
+              </tr>
+            </thead>
+            <tbody id="weapon-table"></tbody>
+          </table>
+        </div>
+
+        <div class="card sheet" id="npc-sheet">
+          <div class="sheet-header">
+            <div>
+              <h3>Wygenerowana karta NPC</h3>
+              <p class="text-muted">Układ docelowy będzie dopasowywany do szablonu podręcznika.</p>
+            </div>
+            <span class="badge">Układ roboczy</span>
           </div>
-          <div class="card">
-            <h3>Bronie</h3>
-            <ul>
-              <li>Nazwa (multiselect)</li>
-              <li>Obrażenia</li>
-              <li>DK</li>
-              <li>PP</li>
-              <li>Zasięg</li>
-              <li>Szybkostrzelność</li>
-              <li>Cechy</li>
-            </ul>
+          <div class="sheet-grid">
+            <div class="sheet-block">
+              <h4>Profil</h4>
+              <div class="sheet-row">
+                <span>Nazwa</span>
+                <strong id="sheet-name">—</strong>
+              </div>
+              <div class="sheet-row">
+                <span>Typ</span>
+                <strong id="sheet-type">—</strong>
+              </div>
+              <div class="sheet-row">
+                <span>Poziom</span>
+                <strong id="sheet-level">—</strong>
+              </div>
+            </div>
+            <div class="sheet-block">
+              <h4>Odporność</h4>
+              <div class="sheet-row">
+                <span>Wartość Pancerza</span>
+                <strong id="sheet-armor">—</strong>
+              </div>
+              <div class="sheet-row">
+                <span>Odporność (w tym WP)</span>
+                <strong id="sheet-resistance">—</strong>
+              </div>
+              <div class="sheet-row">
+                <span>Cechy</span>
+                <div id="sheet-traits" class="tag-list"></div>
+              </div>
+            </div>
+            <div class="sheet-block">
+              <h4>Ataki</h4>
+              <div id="sheet-attacks" class="sheet-list"></div>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section>
-        <h2>7. Placeholdery na kolejne etapy</h2>
-        <p>
-          UI powinno uwzględnić sekcje (na razie nieaktywne) dla: <strong>Talentów</strong>,
-          <strong>Modlitw</strong>, <strong>Psioniki</strong> oraz <strong>Ekwipunku</strong>.
+        <p class="footer">
+          Generator NPC — dane ładowane z Repozytorium. Zakres: Bestiariusz, Pancerze, Bronie.
         </p>
       </section>
-
-      <p class="footer">
-        Dokument roboczy — zakres aktualny: Pancerze + Bronie. Kolejne kroki: Talenty, Modlitwy,
-        Psionika, Ekwipunek.
-      </p>
     </main>
+
+    <aside class="popover" id="trait-popover">
+      <h4 id="trait-title">Opis cechy</h4>
+      <p id="trait-description">Kliknij tag, aby zobaczyć opis cechy.</p>
+    </aside>
+
+    <script>
+      const DATA_URL = "https://cutelittlegoat.github.io/Repozytorium/data.json";
+
+      const elements = {
+        status: document.querySelector("#data-status"),
+        bestiary: document.querySelector("#bestiary"),
+        bestiarySearch: document.querySelector("#bestiary-search"),
+        baseTable: document.querySelector("#base-table"),
+        armorSelect: document.querySelector("#armor"),
+        weaponSelect: document.querySelector("#weapon"),
+        armorSection: document.querySelector("#armor-section"),
+        weaponSection: document.querySelector("#weapon-section"),
+        armorWp: document.querySelector("#armor-wp"),
+        armorResistance: document.querySelector("#armor-resistance"),
+        armorTraits: document.querySelector("#armor-traits"),
+        weaponTable: document.querySelector("#weapon-table"),
+        sheetName: document.querySelector("#sheet-name"),
+        sheetType: document.querySelector("#sheet-type"),
+        sheetLevel: document.querySelector("#sheet-level"),
+        sheetArmor: document.querySelector("#sheet-armor"),
+        sheetResistance: document.querySelector("#sheet-resistance"),
+        sheetTraits: document.querySelector("#sheet-traits"),
+        sheetAttacks: document.querySelector("#sheet-attacks"),
+        popover: document.querySelector("#trait-popover"),
+        popoverTitle: document.querySelector("#trait-title"),
+        popoverDescription: document.querySelector("#trait-description"),
+      };
+
+      const state = {
+        db: null,
+        tables: {},
+        bestiary: [],
+        armors: [],
+        weapons: [],
+        traits: new Map(),
+      };
+
+      const sheetFields = {
+        name: ["Nazwa", "Name"],
+        type: ["Typ", "Rodzaj"],
+        level: ["Poziom", "Poziom zagrożenia", "Poziom Zagrożenia"],
+        resistance: ["Odporność (w tym WP)", "Odporność"],
+        armor: ["Wartość Pancerza", "WP"],
+        traits: ["Cechy"],
+      };
+
+      const toggleArmor = document.querySelector("#toggle-armor");
+      const toggleWeapons = document.querySelector("#toggle-weapons");
+
+      toggleArmor.addEventListener("change", () => {
+        elements.armorSection.classList.toggle("hidden", !toggleArmor.checked);
+      });
+
+      toggleWeapons.addEventListener("change", () => {
+        elements.weaponSection.classList.toggle("hidden", !toggleWeapons.checked);
+      });
+
+      function normalize(value) {
+        return String(value || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, "")
+          .replace(/\./g, "");
+      }
+
+      function getTables(data) {
+        if (!data) {
+          return {};
+        }
+        if (data.data && typeof data.data === "object") {
+          return data.data;
+        }
+        if (data.tables && typeof data.tables === "object") {
+          return data.tables;
+        }
+        return data;
+      }
+
+      function extractTable(tables, candidates) {
+        const normalizedCandidates = candidates.map(normalize);
+        if (Array.isArray(tables)) {
+          for (const table of tables) {
+            const tableName = normalize(table.name || table.sheet || table.tab || table.table);
+            if (normalizedCandidates.includes(tableName)) {
+              return table.rows || table.data || table.items || [];
+            }
+          }
+        }
+        if (tables && typeof tables === "object") {
+          for (const [key, value] of Object.entries(tables)) {
+            if (normalizedCandidates.includes(normalize(key))) {
+              return Array.isArray(value) ? value : value.rows || value.data || [];
+            }
+          }
+        }
+        return [];
+      }
+
+      function findField(record, candidates) {
+        if (!record) {
+          return null;
+        }
+        const keys = Object.keys(record);
+        for (const candidate of candidates) {
+          const match = keys.find((key) => normalize(key) === normalize(candidate));
+          if (match) {
+            return match;
+          }
+        }
+        return null;
+      }
+
+      function parseNumber(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        const match = String(value).match(/-?\d+(?:\.\d+)?/);
+        return match ? Number(match[0]) : null;
+      }
+
+      function parseResistance(value) {
+        const text = String(value || "");
+        const match = text.match(/(\d+)\s*\((\d+)\*?\)/);
+        if (match) {
+          return { total: Number(match[1]), wp: Number(match[2]) };
+        }
+        const total = parseNumber(text);
+        return { total, wp: null };
+      }
+
+      function buildTraitIndex(meta) {
+        const map = new Map();
+        if (!meta) {
+          return map;
+        }
+        if (Array.isArray(meta)) {
+          meta.forEach((entry) => {
+            const name = entry.Nazwa || entry.name;
+            const desc = entry.Opis || entry.description;
+            if (name) {
+              map.set(normalize(name), { name, desc });
+            }
+          });
+          return map;
+        }
+        if (typeof meta === "object") {
+          Object.entries(meta).forEach(([name, desc]) => {
+            map.set(normalize(name), { name, desc });
+          });
+        }
+        return map;
+      }
+
+      function resolveTrait(name) {
+        const direct = state.traits.get(normalize(name));
+        if (direct) {
+          return direct;
+        }
+        const param = name.replace(/\(.*?\)/g, "(X)");
+        const paramMatch = state.traits.get(normalize(param));
+        if (paramMatch) {
+          return paramMatch;
+        }
+        return { name, desc: "Brak opisu w sekcji _meta.traits." };
+      }
+
+      function formatValue(value) {
+        const escaped = String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const withLinks = escaped
+          .replace(
+            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+            '<a class="link" href="$2">$1</a>'
+          )
+          .replace(/(https?:\/\/[^\s,;]+)/g, '<a class="link" href="$1">$1</a>');
+        return withLinks
+          .replace(/\[red\]([\s\S]*?)\[\/red\]/g, '<span class="text-red">$1</span>')
+          .replace(/\{red\}([\s\S]*?)\{\/red\}/g, '<span class="text-red">$1</span>');
+      }
+
+      function clearChildren(node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function renderTags(container, values) {
+        clearChildren(container);
+        values.forEach((trait) => {
+          const tag = document.createElement("span");
+          tag.className = "tag";
+          tag.dataset.trait = trait;
+          tag.textContent = trait;
+          container.appendChild(tag);
+        });
+      }
+
+      function renderValueCell(cell, key, value) {
+        if (key && normalize(key).includes("cechy")) {
+          const traits = String(value || "")
+            .split(";")
+            .map((item) => item.trim())
+            .filter(Boolean);
+          renderTags(cell, traits);
+          return;
+        }
+        cell.innerHTML = formatValue(value ?? "—");
+      }
+
+      function renderKeyValueTable(record) {
+        clearChildren(elements.baseTable);
+        if (!record) {
+          return;
+        }
+        Object.entries(record).forEach(([key, value], index) => {
+          const row = document.createElement("tr");
+          const detailsRow = document.createElement("tr");
+          const keyCell = document.createElement("td");
+          const valueCell = document.createElement("td");
+          const actionCell = document.createElement("td");
+          const button = document.createElement("button");
+
+          const rowId = `detail-${index}`;
+
+          keyCell.textContent = key;
+          renderValueCell(valueCell, key, value);
+
+          button.className = "row-toggle";
+          button.textContent = "Zwiń / Rozwiń";
+          button.dataset.row = rowId;
+
+          actionCell.appendChild(button);
+          row.appendChild(keyCell);
+          row.appendChild(valueCell);
+          row.appendChild(actionCell);
+
+          detailsRow.id = rowId;
+          detailsRow.className = "row-details";
+          detailsRow.setAttribute("hidden", "");
+          const detailsCell = document.createElement("td");
+          detailsCell.colSpan = 3;
+          detailsCell.textContent = value === null || value === undefined ? "—" : String(value);
+          detailsRow.appendChild(detailsCell);
+
+          elements.baseTable.appendChild(row);
+          elements.baseTable.appendChild(detailsRow);
+        });
+      }
+
+      function populateSelect(select, records, nameKey) {
+        clearChildren(select);
+        if (!select.multiple) {
+          const emptyOption = document.createElement("option");
+          emptyOption.value = "";
+          emptyOption.textContent = "—";
+          select.appendChild(emptyOption);
+        }
+        records.forEach((record, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = record[nameKey] ?? "(brak nazwy)";
+          select.appendChild(option);
+        });
+      }
+
+      function filterBestiary() {
+        const search = normalize(elements.bestiarySearch.value);
+        const options = Array.from(elements.bestiary.options);
+        options.forEach((option) => {
+          if (!option.value) {
+            return;
+          }
+          const show = normalize(option.textContent).includes(search);
+          option.hidden = !show;
+        });
+      }
+
+      function getSelectedRecords(select, records) {
+        return Array.from(select.selectedOptions)
+          .map((option) => records[Number(option.value)])
+          .filter(Boolean);
+      }
+
+      function updateArmorSummary() {
+        const selected = getSelectedRecords(elements.armorSelect, state.armors);
+        const wpKey = selected[0] ? findField(selected[0], ["WP", "Wartość Pancerza"]) : null;
+        const traitsKey = selected[0] ? findField(selected[0], ["Cechy"]) : null;
+
+        let highest = { value: null, raw: "—" };
+        const traitSet = new Set();
+
+        selected.forEach((armor) => {
+          const rawWp = wpKey ? armor[wpKey] : null;
+          const numericWp = parseNumber(rawWp);
+          if (numericWp !== null && (highest.value === null || numericWp > highest.value)) {
+            highest = { value: numericWp, raw: rawWp };
+          }
+          const traits = traitsKey ? String(armor[traitsKey] || "").split(";") : [];
+          traits
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .forEach((trait) => traitSet.add(trait));
+        });
+
+        const bestiaryRecord = state.bestiary[Number(elements.bestiary.value)] || null;
+        const resistanceKey = bestiaryRecord ? findField(bestiaryRecord, sheetFields.resistance) : null;
+        const armorValueKey = bestiaryRecord ? findField(bestiaryRecord, sheetFields.armor) : null;
+
+        const resistanceRaw = resistanceKey ? bestiaryRecord[resistanceKey] : null;
+        const armorRaw = armorValueKey ? bestiaryRecord[armorValueKey] : null;
+
+        const resistanceParsed = parseResistance(resistanceRaw);
+        const armorParsed = parseNumber(armorRaw);
+        const baseResistance =
+          resistanceParsed.total !== null && armorParsed !== null
+            ? resistanceParsed.total - armorParsed
+            : null;
+
+        const newResistance =
+          baseResistance !== null && highest.value !== null ? baseResistance + highest.value : null;
+
+        elements.armorWp.textContent = highest.raw || "—";
+        elements.armorResistance.textContent = newResistance !== null ? newResistance : "—";
+        renderTags(elements.armorTraits, Array.from(traitSet));
+
+        elements.sheetArmor.textContent = highest.raw || armorRaw || "—";
+        elements.sheetResistance.textContent =
+          newResistance !== null ? newResistance : resistanceRaw || "—";
+        renderTags(elements.sheetTraits, Array.from(traitSet));
+      }
+
+      function buildAttackRow(weapon, keys) {
+        const row = document.createElement("tr");
+        const nameCell = document.createElement("td");
+        const paramsCell = document.createElement("td");
+        const traitsCell = document.createElement("td");
+
+        const name = weapon[keys.name] || "—";
+        const damage = weapon[keys.damage] || "—";
+        const dk = weapon[keys.dk] || "—";
+        const pp = weapon[keys.pp] || "—";
+        const range = weapon[keys.range] || "—";
+        const rate = weapon[keys.rate] || "—";
+        const traits = weapon[keys.traits] || "";
+
+        nameCell.textContent = name;
+        paramsCell.textContent = `${damage}, DK ${dk}, PP ${pp}, Zasięg ${range}, Sz ${rate}`;
+        renderValueCell(traitsCell, "Cechy", traits);
+
+        row.appendChild(nameCell);
+        row.appendChild(paramsCell);
+        row.appendChild(traitsCell);
+        return row;
+      }
+
+      function updateWeaponSummary() {
+        clearChildren(elements.weaponTable);
+        clearChildren(elements.sheetAttacks);
+
+        const selected = getSelectedRecords(elements.weaponSelect, state.weapons);
+        if (!selected.length) {
+          return;
+        }
+
+        const sample = selected[0];
+        const keys = {
+          name: findField(sample, ["Nazwa", "Name"]),
+          damage: findField(sample, ["Obrażenia", "Obrazenia", "Damage"]),
+          dk: findField(sample, ["DK"]),
+          pp: findField(sample, ["PP"]),
+          range: findField(sample, ["Zasięg", "Zasieg", "Range"]),
+          rate: findField(sample, ["Szybkostrzelność", "Szybkostrzelnosc", "Sz"]),
+          traits: findField(sample, ["Cechy"]),
+        };
+
+        const traitSet = new Set();
+
+        selected.forEach((weapon) => {
+          elements.weaponTable.appendChild(buildAttackRow(weapon, keys));
+          const traits = keys.traits ? String(weapon[keys.traits] || "").split(";") : [];
+          traits
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .forEach((trait) => traitSet.add(trait));
+
+          const attackLine = document.createElement("div");
+          attackLine.className = "sheet-line";
+          attackLine.textContent = `${weapon[keys.name] || "—"} — ${weapon[keys.damage] || "—"}, DK ${
+            weapon[keys.dk] || "—"
+          }, PP ${weapon[keys.pp] || "—"}, Zasięg ${weapon[keys.range] || "—"}, Sz ${
+            weapon[keys.rate] || "—"
+          }`;
+          elements.sheetAttacks.appendChild(attackLine);
+        });
+
+        renderTags(elements.sheetTraits, Array.from(traitSet));
+      }
+
+      function updateSheetProfile(record) {
+        const nameKey = findField(record, sheetFields.name);
+        const typeKey = findField(record, sheetFields.type);
+        const levelKey = findField(record, sheetFields.level);
+        const resistanceKey = findField(record, sheetFields.resistance);
+        const armorKey = findField(record, sheetFields.armor);
+
+        elements.sheetName.textContent = nameKey ? record[nameKey] : "—";
+        elements.sheetType.textContent = typeKey ? record[typeKey] : "—";
+        elements.sheetLevel.textContent = levelKey ? record[levelKey] : "—";
+        elements.sheetResistance.textContent = resistanceKey ? record[resistanceKey] : "—";
+        elements.sheetArmor.textContent = armorKey ? record[armorKey] : "—";
+
+        const traitsKey = findField(record, sheetFields.traits);
+        if (traitsKey) {
+          const traits = String(record[traitsKey] || "")
+            .split(";")
+            .map((item) => item.trim())
+            .filter(Boolean);
+          renderTags(elements.sheetTraits, traits);
+        } else {
+          clearChildren(elements.sheetTraits);
+        }
+      }
+
+      function updateBestiaryView() {
+        const record = state.bestiary[Number(elements.bestiary.value)] || null;
+        renderKeyValueTable(record);
+        if (record) {
+          updateSheetProfile(record);
+        }
+        updateArmorSummary();
+        updateWeaponSummary();
+      }
+
+      function attachListeners() {
+        elements.bestiary.addEventListener("change", updateBestiaryView);
+        elements.bestiarySearch.addEventListener("input", filterBestiary);
+        elements.armorSelect.addEventListener("change", updateArmorSummary);
+        elements.weaponSelect.addEventListener("change", updateWeaponSummary);
+
+        elements.baseTable.addEventListener("click", (event) => {
+          const button = event.target.closest(".row-toggle");
+          if (!button) {
+            return;
+          }
+          const rowId = button.dataset.row;
+          const row = document.getElementById(rowId);
+          if (row.hasAttribute("hidden")) {
+            row.removeAttribute("hidden");
+          } else {
+            row.setAttribute("hidden", "");
+          }
+        });
+
+        document.addEventListener("click", (event) => {
+          const tag = event.target.closest(".tag");
+          if (tag) {
+            const traitName = tag.dataset.trait || tag.textContent;
+            const resolved = resolveTrait(traitName);
+            elements.popoverTitle.textContent = resolved.name;
+            elements.popoverDescription.textContent = resolved.desc || "Brak opisu.";
+            elements.popover.classList.add("active");
+            return;
+          }
+          if (!event.target.closest(".popover")) {
+            elements.popover.classList.remove("active");
+          }
+        });
+      }
+
+      async function init() {
+        try {
+          const response = await fetch(DATA_URL, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const data = await response.json();
+          state.db = data;
+          state.tables = getTables(data);
+          state.bestiary = extractTable(state.tables, ["bestiariusz"]);
+          state.armors = extractTable(state.tables, ["pancerze", "pancerz"]);
+          state.weapons = extractTable(state.tables, ["bronie", "bron"]);
+          state.traits = buildTraitIndex(data._meta?.traits || data.meta?.traits || data.traits);
+
+          const bestiaryNameKey = state.bestiary[0]
+            ? findField(state.bestiary[0], sheetFields.name)
+            : null;
+          const armorNameKey = state.armors[0] ? findField(state.armors[0], sheetFields.name) : null;
+          const weaponNameKey = state.weapons[0] ? findField(state.weapons[0], sheetFields.name) : null;
+
+          populateSelect(elements.bestiary, state.bestiary, bestiaryNameKey || "Nazwa");
+          populateSelect(elements.armorSelect, state.armors, armorNameKey || "Nazwa");
+          populateSelect(elements.weaponSelect, state.weapons, weaponNameKey || "Nazwa");
+
+          elements.status.textContent = "Dane wczytane poprawnie.";
+          elements.status.classList.add("status-success");
+          updateBestiaryView();
+        } catch (error) {
+          elements.status.textContent = `Błąd pobierania danych: ${error.message}`;
+          elements.status.classList.add("status-error");
+        }
+      }
+
+      attachListeners();
+      init();
+    </script>
   </body>
 </html>
