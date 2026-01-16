@@ -35,6 +35,7 @@
             </a>
             , bez modyfikacji źródła.
           </p>
+          <p class="text-muted" id="data-status" aria-live="polite">Ładowanie danych...</p>
         </section>
 
         <section class="panel">
@@ -42,9 +43,7 @@
           <div class="field">
             <label for="bestiary">Bestiariusz · Nazwa</label>
             <select id="bestiary">
-              <option>Wybierz nazwę...</option>
-              <option>Rekord testowy — Ghul</option>
-              <option>Rekord testowy — Mechaniczny strażnik</option>
+              <option value="" disabled selected>Ładowanie danych...</option>
             </select>
           </div>
           <div class="field">
@@ -114,39 +113,9 @@
                 <th>Akcje</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="bestiary-table-body">
               <tr>
-                <td>Odporność (w tym WP)</td>
-                <td>8 (2)</td>
-                <td><button class="row-toggle" data-row="row-1">Zwiń / Rozwiń</button></td>
-              </tr>
-              <tr id="row-1" class="row-details" hidden>
-                <td colspan="3">
-                  Szczegóły: bazowa odporność 6 + WP 2, bez dodatkowych modyfikatorów.
-                </td>
-              </tr>
-              <tr>
-                <td>Wartość Pancerza</td>
-                <td>2</td>
-                <td><button class="row-toggle" data-row="row-2">Zwiń / Rozwiń</button></td>
-              </tr>
-              <tr id="row-2" class="row-details" hidden>
-                <td colspan="3">
-                  Szczegóły: wartość wynikowa do nadpisania po wyborze pancerzy.
-                </td>
-              </tr>
-              <tr>
-                <td>Cechy</td>
-                <td>
-                  <span class="tag" data-trait="Nieporęczny">Nieporęczny (2)</span>
-                  <span class="tag" data-trait="Ciężki">Ciężki</span>
-                </td>
-                <td><button class="row-toggle" data-row="row-3">Zwiń / Rozwiń</button></td>
-              </tr>
-              <tr id="row-3" class="row-details" hidden>
-                <td colspan="3">
-                  Szczegóły: kliknij tag, aby zobaczyć opis cechy w panelu podpowiedzi.
-                </td>
+                <td colspan="3" class="text-muted">Ładowanie danych...</td>
               </tr>
             </tbody>
           </table>
@@ -157,9 +126,7 @@
           <div class="field">
             <label for="armor">Pancerze (wielokrotny wybór)</label>
             <select id="armor" multiple>
-              <option>Pancerz płytowy</option>
-              <option>Pancerz skórzany</option>
-              <option>Pancerz taktyczny</option>
+              <option value="" disabled>Ładowanie danych...</option>
             </select>
           </div>
           <p class="notice">
@@ -173,9 +140,7 @@
           <div class="field">
             <label for="weapon">Bronie (wielokrotny wybór)</label>
             <select id="weapon" multiple>
-              <option>Karabin szturmowy</option>
-              <option>Młot bojowy</option>
-              <option>Pistolet energetyczny</option>
+              <option value="" disabled>Ładowanie danych...</option>
             </select>
           </div>
           <table class="data-table">
@@ -186,14 +151,9 @@
                 <th>Cechy</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="weapon-table-body">
               <tr>
-                <td>Karabin szturmowy</td>
-                <td>2k10, DK 3, PP 1, Zasięg 30, Sz 3</td>
-                <td>
-                  <span class="tag" data-trait="Szybkostrzelna">Szybkostrzelna</span>
-                  <span class="tag" data-trait="Głośna">Głośna</span>
-                </td>
+                <td colspan="3" class="text-muted">Ładowanie danych...</td>
               </tr>
             </tbody>
           </table>
@@ -220,41 +180,421 @@
     </aside>
 
     <script>
+      const DATA_URL = "https://cutelittlegoat.github.io/Repozytorium/data.json";
+
+      const bestiarySelect = document.querySelector("#bestiary");
+      const armorSelect = document.querySelector("#armor");
+      const weaponSelect = document.querySelector("#weapon");
+      const bestiaryTableBody = document.querySelector("#bestiary-table-body");
+      const weaponTableBody = document.querySelector("#weapon-table-body");
+      const dataStatus = document.querySelector("#data-status");
+
       const popover = document.querySelector("#trait-popover");
       const popoverTitle = document.querySelector("#trait-title");
       const popoverDescription = document.querySelector("#trait-description");
 
-      document.querySelectorAll(".row-toggle").forEach((button) => {
-        button.addEventListener("click", () => {
-          const rowId = button.getAttribute("data-row");
-          const row = document.getElementById(rowId);
-          const isHidden = row.hasAttribute("hidden");
-          if (isHidden) {
-            row.removeAttribute("hidden");
+      const state = {
+        data: null,
+        traits: new Map(),
+        bestiary: [],
+        armor: [],
+        weapons: [],
+      };
+
+      const nameKeyCache = new WeakMap();
+
+      const normalizeText = (value) =>
+        String(value ?? "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const canonicalTraitName = (name) =>
+        normalizeText(name).replace(/\(\s*\d+\s*\)/g, "(X)");
+
+      const toDisplayString = (value) => {
+        if (value === null || value === undefined || value === "") {
+          return "—";
+        }
+        if (Array.isArray(value)) {
+          return value.map((item) => toDisplayString(item)).join("; ");
+        }
+        if (typeof value === "object") {
+          return Object.entries(value)
+            .map(([key, val]) => `${key}: ${toDisplayString(val)}`)
+            .join(", ");
+        }
+        return String(value);
+      };
+
+      const extractRecords = (section) => {
+        if (!section) {
+          return [];
+        }
+        if (Array.isArray(section)) {
+          return section;
+        }
+        if (Array.isArray(section.rows)) {
+          return section.rows;
+        }
+        if (Array.isArray(section.data)) {
+          return section.data;
+        }
+        return [];
+      };
+
+      const getCollection = (db, keywords) => {
+        if (!db || typeof db !== "object") {
+          return [];
+        }
+        const entries = Object.entries(db);
+        for (const [key, value] of entries) {
+          const lowerKey = key.toLowerCase();
+          if (keywords.some((keyword) => lowerKey.includes(keyword))) {
+            const records = extractRecords(value);
+            if (records.length) {
+              return records;
+            }
+          }
+        }
+        for (const [, value] of entries) {
+          const records = extractRecords(value);
+          if (records.length) {
+            return records;
+          }
+        }
+        return [];
+      };
+
+      const resolveNameKey = (record) => {
+        if (!record || typeof record !== "object") {
+          return null;
+        }
+        if (nameKeyCache.has(record)) {
+          return nameKeyCache.get(record);
+        }
+        const keys = Object.keys(record);
+        const nameKey =
+          keys.find((key) => key.toLowerCase() === "nazwa") ||
+          keys.find((key) => key.toLowerCase().includes("nazwa")) ||
+          keys.find((key) => key.toLowerCase().includes("name")) ||
+          keys[0];
+        nameKeyCache.set(record, nameKey);
+        return nameKey;
+      };
+
+      const getRecordName = (record, index) => {
+        const key = resolveNameKey(record);
+        const value = key ? record[key] : null;
+        const name = normalizeText(value) || `Rekord ${index + 1}`;
+        return name;
+      };
+
+      const buildTraitsMap = (data) => {
+        const traits = data?._meta?.traits;
+        const map = new Map();
+        if (!traits) {
+          return map;
+        }
+        if (Array.isArray(traits)) {
+          traits.forEach((trait) => {
+            const traitName = trait?.Nazwa || trait?.name || trait?.Name;
+            const traitDescription = trait?.Opis || trait?.description || trait?.Description;
+            if (traitName) {
+              map.set(canonicalTraitName(traitName), traitDescription || "");
+            }
+          });
+          return map;
+        }
+        if (typeof traits === "object") {
+          Object.entries(traits).forEach(([traitName, traitDescription]) => {
+            if (traitName) {
+              map.set(canonicalTraitName(traitName), traitDescription || "");
+            }
+          });
+        }
+        return map;
+      };
+
+      const resolveTraitDescription = (traitName) => {
+        const canonical = canonicalTraitName(traitName);
+        if (state.traits.has(canonical)) {
+          return state.traits.get(canonical);
+        }
+        if (state.traits.has(normalizeText(traitName))) {
+          return state.traits.get(normalizeText(traitName));
+        }
+        return "Opis cechy nie jest dostępny w _meta.traits.";
+      };
+
+      const setStatus = (message) => {
+        dataStatus.textContent = message;
+      };
+
+      const setSelectOptions = (select, items, placeholder) => {
+        select.innerHTML = "";
+        if (!items.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Brak danych";
+          option.disabled = true;
+          option.selected = true;
+          select.append(option);
+          select.disabled = true;
+          return;
+        }
+        if (!select.multiple) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = placeholder;
+          option.disabled = true;
+          option.selected = true;
+          select.append(option);
+        } else if (placeholder) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = placeholder;
+          option.disabled = true;
+          select.append(option);
+        }
+        items.forEach((record, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = getRecordName(record, index);
+          select.append(option);
+        });
+        select.disabled = false;
+      };
+
+      const clearTableBody = (tbody, message) => {
+        tbody.innerHTML = "";
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.className = "text-muted";
+        cell.textContent = message;
+        row.append(cell);
+        tbody.append(row);
+      };
+
+      const createTag = (traitName) => {
+        const span = document.createElement("span");
+        span.className = "tag";
+        span.textContent = traitName;
+        span.setAttribute("data-trait", traitName);
+        return span;
+      };
+
+      const renderTraitsCell = (value) => {
+        const cell = document.createElement("td");
+        const valueString = toDisplayString(value);
+        if (valueString === "—") {
+          cell.textContent = valueString;
+          return cell;
+        }
+        const traits = valueString
+          .split(";")
+          .map((trait) => normalizeText(trait))
+          .filter(Boolean);
+        if (!traits.length) {
+          cell.textContent = "—";
+          return cell;
+        }
+        traits.forEach((trait) => {
+          cell.append(createTag(trait));
+        });
+        return cell;
+      };
+
+      const shouldShowDetail = (valueString) =>
+        valueString.length > 80 || valueString.includes("\n");
+
+      const truncateText = (valueString) => {
+        if (valueString.length <= 80) {
+          return valueString;
+        }
+        return `${valueString.slice(0, 77)}...`;
+      };
+
+      const renderBestiaryTable = (record) => {
+        if (!record) {
+          clearTableBody(bestiaryTableBody, "Wybierz rekord bestiariusza.");
+          return;
+        }
+        bestiaryTableBody.innerHTML = "";
+        const entries = Object.entries(record);
+        entries.forEach(([key, value], index) => {
+          const valueString = toDisplayString(value);
+          const row = document.createElement("tr");
+          const keyCell = document.createElement("td");
+          keyCell.textContent = key;
+          row.append(keyCell);
+
+          let valueCell;
+          if (key.toLowerCase().includes("cechy")) {
+            valueCell = renderTraitsCell(value);
           } else {
-            row.setAttribute("hidden", "");
+            valueCell = document.createElement("td");
+            valueCell.textContent = truncateText(valueString);
+          }
+          row.append(valueCell);
+
+          const actionCell = document.createElement("td");
+          const detailId = `detail-${index}`;
+          const useDetail = shouldShowDetail(valueString) && !key.toLowerCase().includes("cechy");
+          if (useDetail) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "row-toggle";
+            button.setAttribute("data-row", detailId);
+            button.textContent = "Zwiń / Rozwiń";
+            actionCell.append(button);
+          } else {
+            actionCell.textContent = "—";
+          }
+          row.append(actionCell);
+          bestiaryTableBody.append(row);
+
+          if (useDetail) {
+            const detailRow = document.createElement("tr");
+            detailRow.id = detailId;
+            detailRow.className = "row-details";
+            detailRow.hidden = true;
+            const detailCell = document.createElement("td");
+            detailCell.colSpan = 3;
+            detailCell.textContent = valueString;
+            detailRow.append(detailCell);
+            bestiaryTableBody.append(detailRow);
           }
         });
-      });
+      };
 
-      document.querySelectorAll(".tag").forEach((tag) => {
-        tag.addEventListener("click", () => {
-          const traitName = tag.getAttribute("data-trait") || tag.textContent;
-          popoverTitle.textContent = traitName;
-          popoverDescription.textContent =
-            "Opis cechy pojawi się po podłączeniu sekcji _meta.traits z data.json.";
-          popover.classList.add("active");
+      const extractWeaponParams = (record) => {
+        const nameKey = resolveNameKey(record);
+        const traitKey =
+          Object.keys(record).find((key) => key.toLowerCase().includes("cechy")) || null;
+        const params = [];
+        Object.entries(record).forEach(([key, value]) => {
+          if (key === nameKey || key === traitKey) {
+            return;
+          }
+          const valueString = toDisplayString(value);
+          if (valueString !== "—") {
+            params.push(`${key}: ${valueString}`);
+          }
         });
-      });
+        return {
+          nameKey,
+          traitKey,
+          params: params.length ? params.join(", ") : "—",
+        };
+      };
+
+      const renderWeaponTable = () => {
+        const selected = Array.from(weaponSelect.selectedOptions)
+          .map((option) => Number(option.value))
+          .filter((index) => !Number.isNaN(index));
+        if (!selected.length) {
+          clearTableBody(weaponTableBody, "Wybierz broń, aby zobaczyć parametry.");
+          return;
+        }
+        weaponTableBody.innerHTML = "";
+        selected.forEach((index) => {
+          const record = state.weapons[index];
+          if (!record) {
+            return;
+          }
+          const { nameKey, traitKey, params } = extractWeaponParams(record);
+          const row = document.createElement("tr");
+          const nameCell = document.createElement("td");
+          nameCell.textContent = nameKey ? record[nameKey] : `Broń ${index + 1}`;
+          row.append(nameCell);
+          const paramsCell = document.createElement("td");
+          paramsCell.textContent = params;
+          row.append(paramsCell);
+          const traitsCell = traitKey ? renderTraitsCell(record[traitKey]) : renderTraitsCell("");
+          row.append(traitsCell);
+          weaponTableBody.append(row);
+        });
+      };
+
+      const updateBestiarySelection = () => {
+        const index = Number(bestiarySelect.value);
+        if (Number.isNaN(index)) {
+          renderBestiaryTable(null);
+          return;
+        }
+        renderBestiaryTable(state.bestiary[index]);
+      };
+
+      const attachListeners = () => {
+        bestiarySelect.addEventListener("change", updateBestiarySelection);
+        weaponSelect.addEventListener("change", renderWeaponTable);
+      };
+
+      const loadData = async () => {
+        setStatus("Ładowanie danych...");
+        bestiarySelect.disabled = true;
+        armorSelect.disabled = true;
+        weaponSelect.disabled = true;
+        try {
+          const response = await fetch(DATA_URL, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Błąd pobierania: ${response.status}`);
+          }
+          const data = await response.json();
+          state.data = data;
+          state.traits = buildTraitsMap(data);
+          state.bestiary = getCollection(data, ["besti", "bestiariusz"]);
+          state.armor = getCollection(data, ["pancerz", "armor"]);
+          state.weapons = getCollection(data, ["broń", "bron", "weapon"]);
+          setSelectOptions(bestiarySelect, state.bestiary, "Wybierz nazwę...");
+          setSelectOptions(armorSelect, state.armor, "Wybierz pancerze...");
+          setSelectOptions(weaponSelect, state.weapons, "Wybierz bronie...");
+          setStatus(
+            `Załadowano: Bestiariusz (${state.bestiary.length}), Pancerze (${state.armor.length}), Bronie (${state.weapons.length}).`
+          );
+          renderBestiaryTable(null);
+          renderWeaponTable();
+        } catch (error) {
+          setStatus("Nie udało się pobrać danych. Sprawdź CORS i dostępność źródła.");
+          clearTableBody(bestiaryTableBody, "Brak danych do wyświetlenia.");
+          clearTableBody(weaponTableBody, "Brak danych do wyświetlenia.");
+          setSelectOptions(bestiarySelect, [], "");
+          setSelectOptions(armorSelect, [], "");
+          setSelectOptions(weaponSelect, [], "");
+        }
+      };
 
       document.addEventListener("click", (event) => {
-        if (event.target.closest(".tag")) {
+        const toggleButton = event.target.closest(".row-toggle");
+        if (toggleButton) {
+          const rowId = toggleButton.getAttribute("data-row");
+          const row = document.getElementById(rowId);
+          if (row) {
+            const isHidden = row.hasAttribute("hidden");
+            if (isHidden) {
+              row.removeAttribute("hidden");
+            } else {
+              row.setAttribute("hidden", "");
+            }
+          }
+          return;
+        }
+        const tag = event.target.closest(".tag");
+        if (tag) {
+          const traitName = tag.getAttribute("data-trait") || tag.textContent;
+          popoverTitle.textContent = traitName;
+          popoverDescription.textContent = resolveTraitDescription(traitName);
+          popover.classList.add("active");
           return;
         }
         if (!event.target.closest(".popover")) {
           popover.classList.remove("active");
         }
       });
+
+      attachListeners();
+      loadData();
     </script>
   </body>
 </html>
