@@ -3,252 +3,258 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GeneratorNPC — Specyfikacja modułu</title>
-    <style>
-      :root {
-        color-scheme: dark;
-      }
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: #0b0f14;
-        color: #e6edf3;
-        line-height: 1.6;
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 32px 24px 80px;
-      }
-      h1,
-      h2,
-      h3 {
-        font-weight: 600;
-        margin-top: 32px;
-      }
-      h1 {
-        margin-top: 0;
-        font-size: 2.2rem;
-      }
-      p {
-        margin: 12px 0;
-      }
-      ul,
-      ol {
-        margin: 12px 0 12px 24px;
-      }
-      section {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        padding: 20px 24px;
-        margin-bottom: 24px;
-      }
-      .badge {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 999px;
-        font-size: 0.85rem;
-        background: rgba(88, 166, 255, 0.15);
-        border: 1px solid rgba(88, 166, 255, 0.5);
-        color: #c9e3ff;
-        margin-left: 8px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-      }
-      .card {
-        background: rgba(17, 24, 39, 0.6);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 10px;
-        padding: 16px;
-      }
-      code {
-        background: rgba(15, 23, 42, 0.7);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-size: 0.95em;
-      }
-      .note {
-        border-left: 4px solid #22c55e;
-        padding-left: 12px;
-        color: #d1fae5;
-      }
-      .warn {
-        border-left: 4px solid #f59e0b;
-        padding-left: 12px;
-        color: #fde68a;
-      }
-      .footer {
-        margin-top: 48px;
-        font-size: 0.9rem;
-        color: #9ca3af;
-      }
-    </style>
+    <title>Generator NPC — Panel roboczy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main>
-      <h1>GeneratorNPC — Specyfikacja modułu <span class="badge">Etap 1: Pancerze + Bronie</span></h1>
-      <p class="note">
-        Ten dokument opisuje zakres pierwszego etapu rozbudowy GeneratorNPC: łączenie danych z
-        Bestiariusza, Pancerzy i Broni oraz przygotowanie UI pod kolejne moduły (Talenty, Modlitwy,
-        Psionika, Ekwipunek).
-      </p>
+    <header class="topbar">
+      <div class="brand">
+        <h1>Generator NPC</h1>
+        <span>Etap 1 — Bestiariusz · Pancerze · Bronie</span>
+      </div>
+      <div class="actions">
+        <button class="btn">Eksport</button>
+        <button class="btn primary">Generuj kartę</button>
+      </div>
+    </header>
 
-      <section>
-        <h2>1. Cel modułu</h2>
-        <p>
-          Użytkownik wybiera bazowy rekord z zakładki <strong>Bestiariusz</strong>, a następnie może
-          opcjonalnie zmienić <strong>Pancerz</strong> i/lub <strong>Broń</strong>. Zmiany obowiązują
-          wyłącznie w nowej zakładce „Generator NPC” i nie modyfikują danych źródłowych.
-        </p>
-        <p>
-          Dane są pobierane z <code>https://cutelittlegoat.github.io/Repozytorium/data.json</code>.
-        </p>
-      </section>
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>Źródło danych</h2>
+          <p class="text-muted">
+            Dane są pobierane z pliku
+            <a class="link" href="https://cutelittlegoat.github.io/Repozytorium/data.json">
+              cutelittlegoat.github.io/Repozytorium/data.json
+            </a>
+            , bez modyfikacji źródła.
+          </p>
+        </section>
 
-      <section>
-        <h2>2. Zakres UI (Etap 1)</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>2.1. Wybór Bestiariusza</h3>
-            <ul>
-              <li>Jednopolowy select „Nazwa” z zakładki Bestiariusz.</li>
-              <li>Po wyborze wypełnia sekcję danych bazowych.</li>
-            </ul>
+        <section class="panel">
+          <h2>Wybór bazowy</h2>
+          <div class="field">
+            <label for="bestiary">Bestiariusz · Nazwa</label>
+            <select id="bestiary">
+              <option>Wybierz nazwę...</option>
+              <option>Rekord testowy — Ghul</option>
+              <option>Rekord testowy — Mechaniczny strażnik</option>
+            </select>
           </div>
-          <div class="card">
-            <h3>2.2. Checkboxy sterujące</h3>
-            <ul>
-              <li>„Czy zmienić Pancerz?”</li>
-              <li>„Czy zmienić Broń?”</li>
-            </ul>
+          <div class="field">
+            <label for="bestiary-notes">Uwagi do rekordu</label>
+            <textarea id="bestiary-notes" rows="3" placeholder="Opcjonalne notatki"></textarea>
           </div>
-          <div class="card">
-            <h3>2.3. Sekcja Pancerza</h3>
-            <ul>
-              <li>Aktywna tylko po zaznaczeniu checkboxa.</li>
-              <li>Wielokrotny wybór pancerzy z zakładki Pancerze.</li>
-              <li>Wynikowy blok: Odporność (w tym WP), Wartość Pancerza, Cechy Pancerza.</li>
-            </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Moduły aktywne</h2>
+          <div class="checkbox-list">
+            <label class="checkbox">
+              <input type="checkbox" checked />
+              <span>Pancerz — nadpisz WP i cechy.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" checked />
+              <span>Broń — ustaw ataki i cechy.</span>
+            </label>
           </div>
-          <div class="card">
-            <h3>2.4. Sekcja Broni</h3>
-            <ul>
-              <li>Aktywna tylko po zaznaczeniu checkboxa.</li>
-              <li>Wielokrotny wybór broni z zakładki Bronie.</li>
-              <li>Wynikowy blok: Atak + Cechy Broni.</li>
-            </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Moduły planowane</h2>
+          <div class="checkbox-list">
+            <label class="checkbox">
+              <input type="checkbox" disabled />
+              <span>Psionika — przygotować check-boxy pod zdolności.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" disabled />
+              <span>Modlitwy — wstępny blok wyboru zaklęć.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" disabled />
+              <span>Talenty — miejsce na listę pasywną.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" disabled />
+              <span>Ekwipunek — sloty przedmiotów.</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" disabled />
+              <span>Augmentacje — uzupełnienie modyfikacji.</span>
+            </label>
           </div>
-          <div class="card">
-            <h3>2.5. Sekcje przyszłe</h3>
-            <ul>
-              <li>Checkboxy: Talent, Modlitwa, Psionika, Ekwipunek.</li>
-              <li>W tej fazie obecne jako nieaktywne placeholdery.</li>
-            </ul>
-          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Ostrzeżenia formatowania</h2>
+          <p class="text-muted">
+            Jeżeli w danych pojawiają się odnośniki lub czerwone oznaczenia, zachowaj te same znaki
+            interpunkcyjne (przecinki, średniki) oraz wyróżnienie <span class="text-red">czerwoną
+            czcionką</span>.
+          </p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="card">
+          <h3>Podgląd bazowy <span class="badge">Bestiariusz</span></h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Klucz</th>
+                <th>Wartość</th>
+                <th>Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Odporność (w tym WP)</td>
+                <td>8 (2)</td>
+                <td><button class="row-toggle" data-row="row-1">Zwiń / Rozwiń</button></td>
+              </tr>
+              <tr id="row-1" class="row-details" hidden>
+                <td colspan="3">
+                  Szczegóły: bazowa odporność 6 + WP 2, bez dodatkowych modyfikatorów.
+                </td>
+              </tr>
+              <tr>
+                <td>Wartość Pancerza</td>
+                <td>2</td>
+                <td><button class="row-toggle" data-row="row-2">Zwiń / Rozwiń</button></td>
+              </tr>
+              <tr id="row-2" class="row-details" hidden>
+                <td colspan="3">
+                  Szczegóły: wartość wynikowa do nadpisania po wyborze pancerzy.
+                </td>
+              </tr>
+              <tr>
+                <td>Cechy</td>
+                <td>
+                  <span class="tag" data-trait="Nieporęczny">Nieporęczny (2)</span>
+                  <span class="tag" data-trait="Ciężki">Ciężki</span>
+                </td>
+                <td><button class="row-toggle" data-row="row-3">Zwiń / Rozwiń</button></td>
+              </tr>
+              <tr id="row-3" class="row-details" hidden>
+                <td colspan="3">
+                  Szczegóły: kliknij tag, aby zobaczyć opis cechy w panelu podpowiedzi.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </section>
 
-      <section>
-        <h2>3. Logika Pancerza</h2>
-        <ol>
-          <li>Pobierz z Bestiariusza: <strong>Odporność (w tym WP)</strong> i <strong>Wartość Pancerza</strong>.</li>
-          <li>Wylicz <strong>Bazową Odporność</strong> = Odporność (w tym WP) − Wartość Pancerza.</li>
-          <li>Po wyborze pancerzy:</li>
-        </ol>
-        <ul>
-          <li>Wybierz najwyższe <strong>WP</strong> (z gwiazdką, jeśli występuje).</li>
-          <li>Zbierz wszystkie cechy z kolumny <strong>Cechy</strong> (bez duplikatów).</li>
-        </ul>
-        <ol start="4">
-          <li>Ustaw <strong>Wartość Pancerza</strong> = najwyższe WP.</li>
-          <li>Ustaw <strong>Odporność (w tym WP)</strong> = Bazowa Odporność + najwyższe WP.</li>
-          <li>Dodaj kolumnę <strong>Cechy Pancerza</strong> z listą cech (separator: średnik + spacja).</li>
-        </ol>
-        <p class="warn">
-          Uwaga: Bestiariusz przechowuje Odporność wraz z WP, więc wyliczenie bazowej odporności
-          jest kluczowe, aby poprawnie nadpisać pancerz.
-        </p>
-      </section>
-
-      <section>
-        <h2>4. Logika Broni</h2>
-        <ul>
-          <li>Wielokrotny wybór broni z zakładki Bronie.</li>
-          <li>W polu <strong>Atak</strong> wpisz (separator: średnik + spacja):</li>
-        </ul>
-        <ul>
-          <li>Nazwa</li>
-          <li>Obrażenia</li>
-          <li>DK</li>
-          <li>PP</li>
-          <li>Zasięg</li>
-          <li>Szybkostrzelność</li>
-        </ul>
-        <ul>
-          <li>Po wyborze minimum jednej broni dodaj kolumnę <strong>Cechy Broni</strong>.</li>
-          <li>Cechy przenieś z kolumny <strong>Cechy</strong> (bez duplikatów).</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>5. Opisy cech (Pancerz i Broń)</h2>
-        <ul>
-          <li>Zachować mechanizm kliknięcia tagu cechy i wyświetlenia opisu.</li>
-          <li>Źródłem opisów pozostaje sekcja <code>_meta.traits</code> z <code>data.json</code>.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>6. Dane wejściowe i mapowanie</h2>
-        <div class="grid">
-          <div class="card">
-            <h3>Bestiariusz</h3>
-            <ul>
-              <li>Nazwa (select)</li>
-              <li>Odporność (w tym WP)</li>
-              <li>Wartość Pancerza</li>
-              <li>Inne kolumny do podglądu bazowego rekordu</li>
-            </ul>
+        <div class="card">
+          <h3>Wybór Pancerzy</h3>
+          <div class="field">
+            <label for="armor">Pancerze (wielokrotny wybór)</label>
+            <select id="armor" multiple>
+              <option>Pancerz płytowy</option>
+              <option>Pancerz skórzany</option>
+              <option>Pancerz taktyczny</option>
+            </select>
           </div>
-          <div class="card">
-            <h3>Pancerze</h3>
-            <ul>
-              <li>Nazwa (multiselect)</li>
-              <li>WP</li>
-              <li>Cechy</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Bronie</h3>
-            <ul>
-              <li>Nazwa (multiselect)</li>
-              <li>Obrażenia</li>
-              <li>DK</li>
-              <li>PP</li>
-              <li>Zasięg</li>
-              <li>Szybkostrzelność</li>
-              <li>Cechy</li>
-            </ul>
-          </div>
+          <p class="notice">
+            Najwyższe WP nadpisuje wartość pancerza, a cechy pancerza są scalane i
+            rozdzielane średnikiem.
+          </p>
         </div>
-      </section>
 
-      <section>
-        <h2>7. Placeholdery na kolejne etapy</h2>
-        <p>
-          UI powinno uwzględnić sekcje (na razie nieaktywne) dla: <strong>Talentów</strong>,
-          <strong>Modlitw</strong>, <strong>Psioniki</strong> oraz <strong>Ekwipunku</strong>.
+        <div class="card">
+          <h3>Wybór Broni</h3>
+          <div class="field">
+            <label for="weapon">Bronie (wielokrotny wybór)</label>
+            <select id="weapon" multiple>
+              <option>Karabin szturmowy</option>
+              <option>Młot bojowy</option>
+              <option>Pistolet energetyczny</option>
+            </select>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Atak</th>
+                <th>Parametry</th>
+                <th>Cechy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Karabin szturmowy</td>
+                <td>2k10, DK 3, PP 1, Zasięg 30, Sz 3</td>
+                <td>
+                  <span class="tag" data-trait="Szybkostrzelna">Szybkostrzelna</span>
+                  <span class="tag" data-trait="Głośna">Głośna</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Podsumowanie</h3>
+          <p>
+            Wersja robocza UI zachowuje mechanizm tagów cech, zwijanie wierszy i miejsce na
+            kolejne moduły. Dodatkowe pola będą rozszerzane po integracji danych.
+          </p>
+        </div>
+
+        <p class="footer">
+          Generator NPC — UI roboczy. Zakres: Bestiariusz, Pancerze, Bronie, przygotowanie pod
+          Psionikę, Modlitwy, Talenty, Ekwipunek i Augmentacje.
         </p>
       </section>
-
-      <p class="footer">
-        Dokument roboczy — zakres aktualny: Pancerze + Bronie. Kolejne kroki: Talenty, Modlitwy,
-        Psionika, Ekwipunek.
-      </p>
     </main>
+
+    <aside class="popover" id="trait-popover">
+      <h4 id="trait-title">Opis cechy</h4>
+      <p id="trait-description">Kliknij tag, aby zobaczyć opis cechy.</p>
+    </aside>
+
+    <script>
+      const popover = document.querySelector("#trait-popover");
+      const popoverTitle = document.querySelector("#trait-title");
+      const popoverDescription = document.querySelector("#trait-description");
+
+      document.querySelectorAll(".row-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+          const rowId = button.getAttribute("data-row");
+          const row = document.getElementById(rowId);
+          const isHidden = row.hasAttribute("hidden");
+          if (isHidden) {
+            row.removeAttribute("hidden");
+          } else {
+            row.setAttribute("hidden", "");
+          }
+        });
+      });
+
+      document.querySelectorAll(".tag").forEach((tag) => {
+        tag.addEventListener("click", () => {
+          const traitName = tag.getAttribute("data-trait") || tag.textContent;
+          popoverTitle.textContent = traitName;
+          popoverDescription.textContent =
+            "Opis cechy pojawi się po podłączeniu sekcji _meta.traits z data.json.";
+          popover.classList.add("active");
+        });
+      });
+
+      document.addEventListener("click", (event) => {
+        if (event.target.closest(".tag")) {
+          return;
+        }
+        if (!event.target.closest(".popover")) {
+          popover.classList.remove("active");
+        }
+      });
+    </script>
   </body>
 </html>
