@@ -242,27 +242,117 @@
         return [];
       };
 
-      const getCollection = (db, keywords) => {
-        if (!db || typeof db !== "object") {
-          return [];
+      const getSectionName = (section) => {
+        if (!section || typeof section !== "object") {
+          return null;
         }
-        const entries = Object.entries(db);
-        for (const [key, value] of entries) {
-          const lowerKey = key.toLowerCase();
-          if (keywords.some((keyword) => lowerKey.includes(keyword))) {
-            const records = extractRecords(value);
+        const name =
+          section.name ??
+          section.nazwa ??
+          section.Nazwa ??
+          section.title ??
+          section.Tytul ??
+          section.Tytuł ??
+          section.sheet ??
+          section.sheetName ??
+          section.Arkusz ??
+          section.arkusz;
+        return name ? normalizeText(name) : null;
+      };
+
+      const looksLikeRecordArray = (items) =>
+        items.every(
+          (item) =>
+            item &&
+            typeof item === "object" &&
+            !Array.isArray(item) &&
+            !("rows" in item) &&
+            !("data" in item)
+        );
+
+      const findCollectionInNode = (node, keywords, visited) => {
+        if (!node) {
+          return null;
+        }
+        if (typeof node === "object") {
+          if (visited.has(node)) {
+            return null;
+          }
+          visited.add(node);
+        }
+        if (Array.isArray(node)) {
+          if (!node.length) {
+            return null;
+          }
+          const namedSections = node
+            .map((section) => ({
+              section,
+              name: getSectionName(section),
+            }))
+            .filter((entry) => entry.name);
+          if (namedSections.length) {
+            for (const keyword of keywords) {
+              const match = namedSections.find((entry) =>
+                entry.name.toLowerCase().includes(keyword)
+              );
+              if (match) {
+                const records = extractRecords(match.section);
+                if (records.length) {
+                  return records;
+                }
+              }
+            }
+          }
+          if (looksLikeRecordArray(node)) {
+            return node;
+          }
+          for (const section of node) {
+            const records = extractRecords(section);
             if (records.length) {
+              return records;
+            }
+            const nested = findCollectionInNode(section, keywords, visited);
+            if (nested?.length) {
+              return nested;
+            }
+          }
+          return null;
+        }
+        if (typeof node === "object") {
+          const directRecords = extractRecords(node);
+          if (directRecords.length) {
+            return directRecords;
+          }
+          const entries = Object.entries(node);
+          for (const [key, value] of entries) {
+            const lowerKey = key.toLowerCase();
+            if (keywords.some((keyword) => lowerKey.includes(keyword))) {
+              const records = findCollectionInNode(value, keywords, visited);
+              if (records?.length) {
+                return records;
+              }
+              const fallback = extractRecords(value);
+              if (fallback.length) {
+                return fallback;
+              }
+            }
+          }
+          for (const [, value] of entries) {
+            const records = findCollectionInNode(value, keywords, visited);
+            if (records?.length) {
               return records;
             }
           }
         }
-        for (const [, value] of entries) {
-          const records = extractRecords(value);
-          if (records.length) {
-            return records;
-          }
+        return null;
+      };
+
+      const getCollection = (db, keywords) => {
+        if (!db || typeof db !== "object") {
+          return [];
         }
-        return [];
+        const records = findCollectionInNode(db, keywords, new WeakSet());
+        return records ?? [];
       };
 
       const resolveNameKey = (record) => {
