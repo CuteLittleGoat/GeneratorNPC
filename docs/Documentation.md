@@ -26,7 +26,9 @@ Aktualne UI zawiera:
 - przełączniki modułów aktywnych: Pancerz, Broń,
 - placeholdery modułów planowanych: Psionika, Modlitwy, Talenty, Ekwipunek, Augmentacje,
 - tabelę z możliwością zwijania/rozwijania wierszy,
-- podpowiedzi cech w panelu popover.
+- podpowiedzi cech w panelu popover,
+- dynamiczne pobieranie `data.json` z adresu źródłowego i wypełnianie list Bestiariusza, Pancerzy i Broni bez danych testowych,
+- komunikaty stanu pobierania oraz obsługę błędów (np. brak CORS) widoczne w panelu źródła danych.
 
 ## 5. Zmiany wprowadzane przy kolejnych aktualizacjach
 Po każdej zmianie należy:
